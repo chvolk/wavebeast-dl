@@ -1,14 +1,14 @@
 # Integrating with WaveBeast
 
 WaveBeast is a scan-to-creature game with **zero client coupling**: the engine only ever sees a
-[`ScanBundle`](internal/model/scanbundle.go) — a JSON set of real-world signals captured together — and
+`ScanBundle` — a JSON set of real-world signals captured together — and
 turns it deterministically into a creature. Anything that can produce signals (a phone, a Pi sensor rig,
 a barcode scanner, another program) can feed WaveBeast. This doc is the contract for doing that on
 **desktop / Linux** and on **mobile (Android)**.
 
 The same barcode/QR/NFC value always resolves to the same beast on any device; a pure sensor sweep
-derives a place-stable identity from ambient signals (WiFi BSSIDs, or a bucketed composite). See
-[`SPEC.md`](SPEC.md) for the generation model and [`/capabilities`](#capabilities) for live conventions.
+derives a place-stable identity from ambient signals (WiFi BSSIDs, or a bucketed composite). Read the [public wiki](https://wavebeasts.com/docs/) for gameplay and the engine’s
+`GET /capabilities` endpoint for live conventions.
 
 ---
 
@@ -47,20 +47,20 @@ All bodies are JSON. Mutating routes honor `X-WB-Token` when the engine was star
 | Method / path | Purpose |
 |---|---|
 | `GET  /capabilities` | Signal kinds, strength-normalization conventions, feature flags. **Read this first.** |
-| `POST /scan` | Submit a `ScanBundle` → a rolled beast (or resources). Rate-limited locally to ≤1 yield/min. |
+| `POST /scan` | Submit a `ScanBundle` → a rolled beast (or resources). Rate-limited locally to one yield per 300 seconds. |
 | `POST /generate` | **Stateless** resolver: bundle → beast identity + stats, no persistence (what the site uses). |
 | `POST /render` | **Stateless** sprite PNG for a given identity. |
 | `POST /battle/auto` | **Stateless** 3v3 auto-battle resolver. |
 | `GET  /collection`, `GET /beast/{id}`, `GET /species/{sid}` | Read the local collection. |
 | `GET  /sprite/{id}`, `GET /sprite/species/{sid}` | Sprite PNGs. |
-| `POST /node/config`, `POST /node/submit` | Link a background node to an account and relay one snapshot/min. |
+| `POST /node/config`, `POST /node/submit` | Link a background node to an account and relay snapshots at the server’s cadence (normally 300 seconds). |
 
 Example `ScanBundle` POST:
 
 ```sh
 curl -s localhost:8777/scan -H 'content-type: application/json' -d '{
   "schema":"wavebeast.scanbundle","v":1,
-  "signals":[{"kind":"qr","strength":1.0,"value":{"data":"WB:GARDEN-7"}}]
+  "signals":[{"kind":"code","strength":1.0,"value":{"data":"WB:GARDEN-7"}}]
 }'
 ```
 
@@ -108,3 +108,26 @@ startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("wavebeast://scan?code=" 
 Both paths resolve to the web GUI's `#code=` handler, so a deep-linked value scans identically to one
 typed in or captured by the camera. The engine listens only on `127.0.0.1:8777` inside the app — it is
 not exposed off-device; integration is via intents, not that port.
+
+### Linked account identity (0.12.1)
+
+`GET https://wavebeasts.com/api/account` with `X-WB-Node-Token` returns the linked
+account's name, primary email (or null when unavailable), plan/subscription status,
+shard/core balances, owned beast count, node count/limit, and current node name/kind/cadence.
+This endpoint is available on Free and Premium and returns `Cache-Control: private, no-store`.
+Treat the code and returned account information as private.
+
+The local engine exposes the same response at `GET /node/account`, using the saved World
+link and the engine's normal local authentication. `POST /node/config` validates a nonempty
+link against the account endpoint before saving it; a failed relink preserves the working
+configuration. An empty token unlinks. Redirects are not followed with account credentials.
+
+The standalone app and local GUI display this identity in World. A successful camera code
+scan automatically stages one camera input, shows “Code grabbed” with a shortened preview,
+and stops the camera. The complete code is retained. Typed text has its own single input;
+new camera inputs replace the camera slot, and other manual inputs replace their matching
+kind (or scalar metric). Slot metadata is never sent in scan payloads.
+
+The paged public manual is at https://wavebeasts.com/docs/ . Agent setup instructions for
+both the thin listener and full local engine are at https://wavebeasts.com/docs/ai-setup/ .
+Third-party API clients are independent applications, not part of the WaveBeasts suite.
