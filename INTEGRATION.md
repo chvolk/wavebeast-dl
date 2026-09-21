@@ -131,3 +131,13 @@ kind (or scalar metric). Slot metadata is never sent in scan payloads.
 The paged public manual is at https://wavebeasts.com/docs/ . Agent setup instructions for
 both the thin listener and full local engine are at https://wavebeasts.com/docs/ai-setup/ .
 Third-party API clients are independent applications, not part of the WaveBeasts suite.
+
+### Wild sighting deadlines (0.12.2)
+
+`GET /api/beasts` wild rows include `expires_in` (seconds), `expires_at` (ISO timestamp),
+and `expiry_duration` (original lifetime in seconds). The linked engine exposes the same
+private response at `GET /node/beasts`. Countdown bars use the remaining time without
+extending the deadline on rerender. Expired sightings cannot consume a catch drive.
+
+The iOS app is available as `wavebeast-ios-unsigned.ipa` in the public release. This is a
+personal-signing/sideloading artifact, not a signed App Store or TestFlight distribution.
