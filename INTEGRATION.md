@@ -107,7 +107,9 @@ startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("wavebeast://scan?code=" 
 
 Both paths resolve to the web GUI's `#code=` handler, so a deep-linked value scans identically to one
 typed in or captured by the camera. The engine listens only on `127.0.0.1:8777` inside the app — it is
-not exposed off-device; integration is via intents, not that port.
+not exposed off-device. Other Android apps on the same phone can use that loopback API
+while the standalone app is running. Read `/host` to display its selected authority; use
+`X-WB-Token` if an engine token is configured. Intents/deep links also work without an HTTP client.
 
 ### Linked account identity (0.12.1)
 
@@ -179,3 +181,11 @@ account's saved node credential. Pure self-hosted engines do not offer the paid 
 Omnitool is an independent example: it defaults to wavebeasts.com and explicitly offers a
 self-hosted URL or the standalone app's selected host; it no longer silently prefers another
 reachable engine.
+
+
+### Legacy Buddy clients (0.12.5)
+
+The selected-host relay preserves `GET /buddy` → `{individual_id, beast}` and
+`POST /buddy` with `{individual_id: "account-beast-id"}`. An explicit empty string unslots;
+a missing/invalid field is rejected. Rich account Buddy vitals/care remain available through
+`/account/api/buddy` and `/account/api/buddy/care`.
