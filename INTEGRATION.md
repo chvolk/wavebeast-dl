@@ -150,3 +150,32 @@ capture drive against current inventory. `POST /api/sightings/dismiss` accepts `
 removes only an authenticated user's wild sighting; it never releases an owned beast or spends inventory.
 The local engine relays these at `/node/catch` and `/node/sightings/dismiss`, using the saved account
 link. Catch and dismiss controls live in the standalone Beasts tab and refresh stock after every attempt.
+
+### Selected host and shared state (0.12.4)
+
+A linked engine now uses the account as the authority for **all** gameplay, not just World.
+`GET /host` returns `{ok, api_version: 2, host: {kind, url}}`; show that identity in every
+custom client. Kinds are `account`, `engine` (a self-hosted target), or `local` (this engine's
+own database). Credentials are never returned. `GET /state` supplies `beasts`, `currency`,
+and `items` from the selected authority in one response.
+
+The existing `/scan`, `/catch`, `/collection`, `/inventory`, `/economy/shop`, `/economy/buy`,
+`/beast/{id}`, `/beast/release`, `/train`, and sprite routes follow that authority. Linked
+scans create server-rolled account beasts; they never also credit the local save. Background
+scans follow the same host. Authentication, stock, cooldown, payment and network errors are
+returned without falling back to a different database. UI clients should refresh after every
+mutation and on resume; the shared GUI also refreshes visible state every 15 seconds.
+
+Link accounts with `/node/config` as before. Select an engine with POST `/host/config`:
+`{"kind":"engine","url":"http://192.168.1.100:8777","token":"optional X-WB-Token"}`.
+Select this engine's retained local save with `{"kind":"local"}`. Host replacement validates
+reachability first. A remote engine must use its own database; relay chains are rejected.
+Keep the previous local save for explicit import; do not sum balances or overwrite one host
+with another. Node/account credentials and the optional local engine token are distinct.
+
+Account clients using the standalone app's API can call the allowlisted `/account/api/*`
+relay for account identity, Buddy care, shop, nickname/heal and sightings. It uses the selected
+account's saved node credential. Pure self-hosted engines do not offer the paid account layer.
+Omnitool is an independent example: it defaults to wavebeasts.com and explicitly offers a
+self-hosted URL or the standalone app's selected host; it no longer silently prefers another
+reachable engine.
