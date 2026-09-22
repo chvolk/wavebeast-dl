@@ -2,13 +2,19 @@
 
 WaveBeast is a scan-to-creature game with **zero client coupling**: the engine only ever sees a
 `ScanBundle` — a JSON set of real-world signals captured together — and
-turns it deterministically into a creature. Anything that can produce signals (a phone, a Pi sensor rig,
+uses them to discover procedurally generated creatures. Anything that can produce signals (a phone, a Pi sensor rig,
 a barcode scanner, another program) can feed WaveBeast. This doc is the contract for doing that on
 **desktop / Linux** and on **mobile (Android)**.
 
-The same barcode/QR/NFC value always resolves to the same beast on any device; a pure sensor sweep
-derives a place-stable identity from ambient signals (WiFi BSSIDs, or a bucketed composite). Read the [public wiki](https://wavebeasts.com/docs/) for gameplay and the engine’s
-`GET /capabilities` endpoint for live conventions.
+Since generation v5 (app 0.12.7), each beast encounter combines the barcode/QR/NFC or ambient
+habitat key with a fresh host-generated nonce. Repeated scans in one place discover different
+creatures; sensors still bias type and roll quality. Saved beasts retain their names and appearance.
+New sprite recipes carry `version: 2`; legacy recipes retain their original renderer. Read the
+[public wiki](https://wavebeasts.com/docs/) and `GET /capabilities` for current conventions.
+
+`GET /state` includes `scan_ready_in` in seconds. Disable Sweep while that is positive and while
+submitting a scan. Scan results return `next_snapshot_in`; cooldown replies return `retry_after`.
+Count down locally, refresh on resume, and never submit automatically when the countdown ends.
 
 ---
 
