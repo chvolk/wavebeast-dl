@@ -141,3 +141,12 @@ extending the deadline on rerender. Expired sightings cannot consume a catch dri
 
 The iOS app is available as `wavebeast-ios-unsigned.ipa` in the public release. This is a
 personal-signing/sideloading artifact, not a signed App Store or TestFlight distribution.
+
+### Discovery queue controls (0.12.3)
+
+`GET /api/beasts` includes `catch_drives`, containing only owned capture drives with positive stock
+(`item_id`, `name`, `qty`). `POST /api/catch` accepts `{beast_id, drive}` and validates the selected
+capture drive against current inventory. `POST /api/sightings/dismiss` accepts `{beast_id}` and
+removes only an authenticated user's wild sighting; it never releases an owned beast or spends inventory.
+The local engine relays these at `/node/catch` and `/node/sightings/dismiss`, using the saved account
+link. Catch and dismiss controls live in the standalone Beasts tab and refresh stock after every attempt.
